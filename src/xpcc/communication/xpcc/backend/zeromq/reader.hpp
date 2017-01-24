@@ -19,6 +19,7 @@
 #include <zmqpp/zmqpp.hpp>
 
 #include "../header.hpp"
+#include "../event_poller.hpp"
 
 #include <xpcc/debug/logger.hpp>
 #undef XPCC_LOG_LEVEL
@@ -71,11 +72,14 @@ public:
 	void
 	dropPacket();
 
+	void
+	setReadEvent(xpcc::EventPoller::EventSender sender);
+
 private:
 	void
 	receiveThread();
 
-	void
+	bool
 	readPacket(const zmqpp::message& message);
 
 private:
@@ -87,6 +91,8 @@ private:
 
 	std::thread thread;
 	std::atomic<bool> stopThread;
+
+	xpcc::EventPoller::EventSender readEvent;
 };
 
 } // xpcc namespace

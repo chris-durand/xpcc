@@ -138,4 +138,11 @@ ZeroMQConnector::update()
 {
 }
 
+// ----------------------------------------------------------------------------
+void
+ZeroMQConnector::setReadEvent(xpcc::EventPoller::EventSender sender)
+{
+	this->reader.setReadEvent(sender);
+}
+
 } // xpcc namespace

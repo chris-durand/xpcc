@@ -20,6 +20,7 @@
 #define	XPCC_LOG_LEVEL xpcc::log::ERROR
 
 #include "../backend_interface.hpp"
+#include "../event_poller.hpp"
 #include "reader.hpp"
 
 namespace xpcc
@@ -68,6 +69,9 @@ public:
 
 	virtual void
 	update() override;
+
+	void
+	setReadEvent(xpcc::EventPoller::EventSender sender);
 
 protected:
 	zmqpp::context context;

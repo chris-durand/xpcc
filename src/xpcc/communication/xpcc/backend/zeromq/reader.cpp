@@ -86,8 +86,11 @@ ZeroMQReader::receiveThread()
 	poller.add(this->socketIn, zmqpp::poller::poll_in);
 
 	while(not this->stopThread) {
+		bool notify = false;
 		while(this->socketIn.receive(message, /* no_block = */ true)) {
-			readPacket(message);
+			if(readPacket(message)) {
+				notify = true;
+			}
 
 #			if ZMQPP_VERSION_MAJOR < 4
 			// swap and discard old message as in zmqpp 3
@@ -96,12 +99,18 @@ ZeroMQReader::receiveThread()
 			std::swap(emptyMessage, message);
 #			endif
 		}
+
+		// Notify waiting backend users if packets have been received
+		if(notify) {
+			this->readEvent.sendEvent();
+		}
+
 		poller.poll(PollTimeoutMs);
 	}
 }
 
 // ----------------------------------------------------------------------------
-void
+bool
 ZeroMQReader::readPacket(const zmqpp::message& message)
 {
 	constexpr uint16_t headerSize = 5;
@@ -138,10 +147,22 @@ ZeroMQReader::readPacket(const zmqpp::message& message)
 			uint8_t* const payloadBuffer = this->queue.back().payload.getPointer();
 			std::copy_n(data + headerSize, payloadSize, payloadBuffer);
 		}
+
+		return true;
 	} else {
 		XPCC_LOG_ERROR << XPCC_FILE_INFO;
 		XPCC_LOG_ERROR << "Invalid message length: " << size << xpcc::endl;
 	}
+
+	return false;
 }
+
+// ----------------------------------------------------------------------------
+void
+ZeroMQReader::setReadEvent(xpcc::EventPoller::EventSender sender)
+{
+	this->readEvent = sender;
+}
+
 
 } // xpcc namespace
