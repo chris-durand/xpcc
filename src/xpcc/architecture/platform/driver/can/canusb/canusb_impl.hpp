@@ -211,8 +211,11 @@ xpcc::hosted::CanUsb<SerialPort>::update()
 {
 	while (true)
 	{
+		this->serialPort.waitForData(100);
+
+		bool dataRead = false;
 		char a;
-		if (this->serialPort.read(a))
+		while (this->serialPort.read(a))
 		{
 			XPCC_LOG_DEBUG.printf("Received %02x\n", a);
 			if (a == 'T' || a == 't' || a == 'r' || a == 'R')
@@ -226,10 +229,23 @@ xpcc::hosted::CanUsb<SerialPort>::update()
 					this->tmpRead.c_str(), message))
 			{
 				this->readBuffer.push(message);
+				dataRead = true;
 			}
 		}
+
+		if(dataRead) {
+			readEvent.sendEvent();
+		}
+		
 		if (not this->active) {
 			break;
 		}
 	}
+}
+
+template <typename SerialPort>
+void
+xpcc::hosted::CanUsb<SerialPort>::setReadEvent(xpcc::EventPoller::EventSender sender)
+{
+	this->readEvent = sender;
 }

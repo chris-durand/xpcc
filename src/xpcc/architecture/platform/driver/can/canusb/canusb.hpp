@@ -16,6 +16,8 @@
 #include <xpcc/architecture/interface/can.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread.hpp>
+#include <xpcc/communication/xpcc/backend/event_poller.hpp>
+
 
 namespace xpcc
 {
@@ -77,6 +79,9 @@ public:
 		return this->serialPort.isOpen();
 	}
 
+	void
+	setReadEvent(xpcc::EventPoller::EventSender sender);
+	
 private:
 	// updated by boost thread
 	void
@@ -96,6 +101,8 @@ private:
 
 	std::string tmpRead;
 	std::queue<can::Message> readBuffer;
+
+	xpcc::EventPoller::EventSender readEvent;
 
 	boost::thread* thread;
 };
