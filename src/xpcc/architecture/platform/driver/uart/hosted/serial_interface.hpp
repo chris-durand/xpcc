@@ -170,6 +170,9 @@ namespace xpcc
 			void
 			dump();
 
+			bool
+			waitForData(uint16_t timeoutMs);
+
 		protected:
 			void
 			initSerial();

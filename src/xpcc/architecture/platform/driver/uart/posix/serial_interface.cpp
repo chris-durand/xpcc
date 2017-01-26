@@ -24,6 +24,8 @@
 
 #include <xpcc/debug/logger.hpp>
 
+#include <sys/poll.h>
+
 #undef XPCC_LOG_LEVEL
 #define XPCC_LOG_LEVEL 	xpcc::log::ERROR
 
@@ -381,6 +383,19 @@ xpcc::hosted::SerialInterface::dump()
 			<< "output speed: " << configStatus.c_ospeed << xpcc::endl
 			<< "speed:        " << ( configStatus.c_cflag ) << xpcc::endl;
 	}
+}
+
+bool
+xpcc::hosted::SerialInterface::waitForData(uint16_t timeoutMs)
+{
+	pollfd fd;
+	fd.fd = this->fileDescriptor;
+	fd.events = POLLIN;
+
+	const int result = ::poll(&fd, 1, timeoutMs);
+
+	// Return true if data is available
+	return result > 0;
 }
 
 // ----------------------------------------------------------------------------
