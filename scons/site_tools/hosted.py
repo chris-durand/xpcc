@@ -39,9 +39,9 @@ def generate(env, **kw):
 	env['ENV'] = os.environ
 
 	if env['HOSTED_DEVICE'] == 'linux':
-		env['LIBS'] = ['boost_thread', 'boost_system', 'pthread']
+		env['LIBS'] = ['boost_thread', 'boost_system', 'pthread', 'zmq', 'zmqpp']
 	elif env['HOSTED_DEVICE'] == 'darwin':
-		env['LIBS'] = ['boost_thread-mt', 'boost_system']
+		env['LIBS'] = ['boost_thread-mt', 'boost_system', 'zmq', 'zmqpp']
 	elif env.System() == 'windows':
 		env['LIBS'] = ['winpthread', 'boost_thread-mt', 'boost_system', 'wsock32', 'mingw32', 'SDLmain', 'SDL', 'winmm', 'gdi32', 'dxguid', 'gdi32', 'winmm', 'gdi32']
 
