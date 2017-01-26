@@ -3,6 +3,7 @@
 #include <xpcc/architecture.hpp>
 
 #include <xpcc/architecture/interface/can.hpp>
+#include <xpcc/architecture/platform/driver/uart/hosted/serial_interface.hpp>
 #include <xpcc/architecture/platform/driver/can/canusb/canusb.hpp>
 #include <xpcc/architecture/platform/driver/can/socketcan/socketcan.hpp>
 
@@ -11,6 +12,8 @@
 
 #include <xpcc/communication/xpcc/backend/can/connector.hpp>
 #include <xpcc/communication/xpcc/backend/zeromq/connector.hpp>
+
+#include <xpcc/communication/xpcc/backend/event_poller.hpp>
 
 /**
  * Listens to a CAN bus connected by a CAN2USB and publishes xpcc messages with zeromq.
@@ -30,17 +33,21 @@
 // Default baud rate
 static constexpr uint32_t canBusBaudRate = 125000;
 
+static xpcc::hosted::SerialInterface serialInterface;
+
 /* Either use an USB CAN2USB adaptor with xpcc Lawicel interpreter
    or use a CAN controller supported by Linux' SocketCAN.
 
    With SocketCAN the baudrate must be set with the operating system.
    $ ip link set can0 type can bitrate
 */
-// static xpcc::hosted::CanUsb canUsb;
-static xpcc::hosted::SocketCan canSocket;
+static xpcc::hosted::CanUsb< xpcc::hosted::SerialInterface > canUsb(serialInterface);
+// static xpcc::hosted::SocketCan canSocket;
 
-// static xpcc::CanConnector< xpcc::hosted::CanUsb > canConnector(&canUsb);
-static xpcc::CanConnector< xpcc::hosted::SocketCan > canConnector(&canSocket);
+using CanDriver = xpcc::hosted::CanUsb< xpcc::hosted::SerialInterface >;
+
+static xpcc::CanConnector< CanDriver > canConnector(&canUsb);
+// static xpcc::CanConnector< xpcc::hosted::SocketCan > canConnector(&canSocket);
 
 #undef XPCC_LOG_LEVEL
 #define	XPCC_LOG_LEVEL xpcc::log::DEBUG
@@ -50,21 +57,31 @@ main()
 {
 	XPCC_LOG_DEBUG << "ZeroMQ SocketCAN XPCC bridge" << xpcc::endl;
 
-	// if (not canUsb.open("/dev/ttyUSB0", canBusBaudRate)) {
-	if (not canSocket.open("can0" /*, canBusBaudRate */)) {
+	serialInterface.setBaudRate(115200);
+	serialInterface.setDeviceName("/dev/ttyUSB0");
+
+	if (not canUsb.open()) {
+	//if (not canSocket.open("can0" /*, canBusBaudRate */)) {
 		XPCC_LOG_ERROR << "Could not open port" << xpcc::endl;
 		exit(EXIT_FAILURE);
 	}
+
+	xpcc::EventPoller readPoller;
 
 	const std::string endpointOut = "tcp://*:8211";
 	const std::string endpointIn  = "tcp://*:8212";
 
 	xpcc::ZeroMQConnector zmqConnector(endpointIn, endpointOut, xpcc::ZeroMQConnector::Mode::PubPull);
 
+	canUsb.setReadEvent(readPoller.getEventSender());
+	zmqConnector.setReadEvent(readPoller.getEventSender());
+
 	XPCC_LOG_DEBUG << "Entering main loop" << xpcc::endl;
 
 	while(true)
 	{
+		readPoller.wait();
+
 		canConnector.update();
 		zmqConnector.update();
 
@@ -91,10 +108,8 @@ main()
 
 			zmqConnector.dropPacket();
 		}
-
-		xpcc::delayMilliseconds(10);
 	}
 
-	// canUsb.close();
-	canSocket.close();
+	canUsb.close();
+	// canSocket.close();
 }
