@@ -47,7 +47,7 @@ private:
 		return Clk / (Bitrate * (1 + bs1 + bs2));
 	}
 
-	struct CanBitTimingConfguration {
+	struct CanBitTimingConfiguration {
 		uint8_t bs1;	// 1-16
 		uint8_t bs2;	// 1-8
 		uint8_t sjw;
@@ -60,7 +60,10 @@ private:
 		       (Clk == xpcc::clock::MHz30)? 10 :
 		       (Clk == xpcc::clock::MHz36)? 12 :
 		       (Clk == xpcc::clock::MHz42)? 14 :
-		       (Clk == xpcc::clock::MHz32)? 11 : 0;
+		       (Clk == xpcc::clock::MHz32)? 11 :
+		       (Clk == xpcc::clock::MHz45)? 10 :
+		       (Clk == xpcc::clock::MHz54)? 12 :
+		       (Clk == xpcc::clock::MHz80)? 11 : 0;
 	}
 
 	static constexpr uint8_t calcBS2() {
@@ -69,14 +72,17 @@ private:
 		       (Clk == xpcc::clock::MHz30)?  4 :
 		       (Clk == xpcc::clock::MHz36)?  5 :
 		       (Clk == xpcc::clock::MHz42)?  6 :
-		       (Clk == xpcc::clock::MHz32)?  4 : 0;
+		       (Clk == xpcc::clock::MHz32)?  4 :
+		       (Clk == xpcc::clock::MHz45)?  4 :
+		       (Clk == xpcc::clock::MHz54)?  5 :
+		       (Clk == xpcc::clock::MHz80)?  4 : 0;
 	}
 
-	static constexpr CanBitTimingConfguration calculateBestConfig() {
+	static constexpr CanBitTimingConfiguration calculateBestConfig() {
 		return { calcBS1(), calcBS2(), 1, calculatePrescaler(calcBS1(), calcBS2()) };
 	}
 
-	static constexpr CanBitTimingConfguration BestConfig = calculateBestConfig();
+	static constexpr CanBitTimingConfiguration BestConfig = calculateBestConfig();
 
 public:
 	static constexpr uint8_t getBS1() { return BestConfig.bs1; }
@@ -88,7 +94,7 @@ private:
 	// check assertions
 	static_assert(getBS1() > 0 and getBS2() > 0,
 		"Unsupported frequency for Can peripheral. "
-		"Only 8MHz, 30 Mhz, 36 MHz, 42 MHz and 48 MHz are supported at the moment.");
+		"Only 8MHz, 30 Mhz, 36 MHz, 42 MHz, 45 MHz, 48 MHz, 54 Mhz and 80 MHz are supported at the moment.");
 	static_assert(getPrescaler() > 0, "CAN bitrate is too high for standard bit timings!");
 };
 
